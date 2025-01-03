@@ -1,0 +1,10 @@
+#!/bin/bash
+
+conf="${MESON_SOURCE_ROOT}/config"
+dest="/etc/hestia/config.d"
+
+mkdir -p dest
+cp $conf/* $dest/
+chmod 755 $dest
+chmod 640 $dest/*
+

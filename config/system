@@ -1,0 +1,9 @@
+prv 0755
+proc     proc    sxd
+sysfs    sys     sxdr
+devtmpfs dev     s
+devpts   dev/pts sx   mode=0620,gid=5
+tmpfs    tmp     sdt
+prv 0777
+tmpfs    dev/shm      mode=1777
+

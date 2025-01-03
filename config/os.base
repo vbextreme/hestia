@@ -1,0 +1,9 @@
+prv 0755
+bind /run run p
+overlay /opt opt
+overlay /usr usr
+overlay /var var
+overlay /bin bin
+overlay /lib lib
+overlay /lib64 lib64
+
