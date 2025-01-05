@@ -13,9 +13,6 @@
 #include <hestia/config.h>
 
 /*
- * TODO manca:
- *	exec
- *	use
  *
  * s MS_NOSUID
  * x MS_NOEXEC
@@ -88,6 +85,15 @@ __private char* config_load(const char* confname){
 	if( info.st_uid != 0 || info.st_gid != 0 ) die("config '%s' required root owner for uid and gid", path);
 	if( info.st_mode & S_IWOTH ) die("config '%s' can't share write privilege with others", path);
 	return mem_nullterm(load_file(path, 1));
+}
+
+__private char* script_check(const char* scriptname){
+	char* path = str_printf("%s/%s", HESTIA_SCRIPT_PATH, scriptname);
+	struct stat info;
+	if( stat(path, &info) ) die("unable to get info on file '%s'::%m", path);
+	if( info.st_uid != 0 || info.st_gid != 0 ) die("config '%s' required root owner for uid and gid", path);
+	if( info.st_mode & S_IWOTH ) die("config '%s' can't share write privilege with others", path);
+	return path;
 }
 
 __private char* option_get(const char** parse, int optional, const char* homedir){
@@ -181,8 +187,7 @@ __private rootHierarchy_s* rh_findchild(rootHierarchy_s* rh, const char* name, u
 __private rootHierarchy_s* new_target(rootHierarchy_s* root, const char* dest){
 	if( !dest || !*dest || *dest == '.' || *dest == '/' || *dest == '~' )
 		die("config invalid destination '%s'", dest);
-	
-	
+		
 	unsigned len = 0;
 	unsigned next = 0;
 	const char* ent = NULL;
@@ -275,10 +280,16 @@ __private void config_parse(rootHierarchy_s* rh, const char* parse, uid_t setuid
 			__free char* conf = config_load(confname);
 			config_parse(rh, conf, setuid, setgid, homedir);
 		}
+		else if( !strcmp(cmd, "script") ){
+			__free char* scriptname  = option_get(&parse, 0, homedir);
+			__free char* scriptent   = str_printf("%s/%s", HESTIA_SCRIPT_ENT, scriptname);
+			rootHierarchy_s* ch = new_target(rh, scriptent);
+			ch->type = mem_borrowed(cmd);
+			ch->src  = script_check(scriptname);
+		}
 		else{
 			die("unknown option '%s'", cmd);
 		}
-		
 		parse = option_end(parse);
 	}
 
@@ -291,6 +302,7 @@ rootHierarchy_s* hestia_load(const char* confname, uid_t uid, gid_t gid){
 	rootHierarchy_s* rh = NEW(rootHierarchy_s);
 	memset(rh, 0, sizeof(rootHierarchy_s));
 	rh->child = MANY(rootHierarchy_s, 4);
+	new_target(rh, HESTIA_SCRIPT_ENT);
 	__free char* conf = config_load(confname);
 	config_parse(rh, conf, uid, gid, home);
 	return rh;
@@ -321,9 +333,6 @@ void hestia_config_analyzer(const char* destdir, const char* name, rootHierarchy
 		hierarchy_analyzer(&root->child[i], target, 1);
 	}
 }
-
-
-
 
 
 

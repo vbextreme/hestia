@@ -1,0 +1,13 @@
+<!--
+== title ==
+[[Category:nome categoria]]
+[url/ nome]
+[[refpage]]
+{{Pkg|nome del pacchetto}}
+{{Warning|sfondo rosso}}
+{{ic|evidenzia}}
+{{man|1|nome|EXAMPLES}}
+{{AUR|nome pacchetto aur}}
+-->
+
+

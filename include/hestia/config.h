@@ -4,6 +4,8 @@
 #include <sys/stat.h>
 
 #define HESTIA_CONFIG_PATH "/etc/hestia/config.d"
+#define HESTIA_SCRIPT_PATH "/etc/hestia/script.d"
+#define HESTIA_SCRIPT_ENT  "@SCRIPT@"
 
 typedef struct rootHierarchy{
 	struct rootHierarchy* child;

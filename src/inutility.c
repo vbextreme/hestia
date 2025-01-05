@@ -186,6 +186,14 @@ void print_repeat(unsigned count, const char ch){
 	while( count --> 0 ) fputc(ch, stdout);
 }
 
+int shell(const char* exec){
+	puts(exec);
+	int ex = system(exec);
+	if( ex == -1 ) return -1;
+	if( !WIFEXITED(ex) || WEXITSTATUS(ex) != 0) return -1;
+	return 0;
+}
+
 __private int isyesno(const char* in, int noyes){
 	__private char* noyesmap[][5] = {
 		{ "n", "no" , "N", "No" , "NO"  },

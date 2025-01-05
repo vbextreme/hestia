@@ -78,7 +78,7 @@ int hestia_mount(const char* destdir, const char* target, rootHierarchy_s* root)
 		return -1;
 	}
 	mforeach(root->child, i){
-		if( hierarchy_mount(&root->child[i], path) ) return -1;
+		if( strcmp(root->child[i].target, HESTIA_SCRIPT_ENT) && hierarchy_mount(&root->child[i], path) ) return -1;
 	}
 	return 0;
 }
@@ -88,13 +88,12 @@ __private int hierarchy_umount(rootHierarchy_s* h, const char* path){
 	mforeach(h->child, i){
 		hierarchy_umount(&h->child[i], target);
 	}
-
+	
 	if( dir_exists(target) ){
-		if( umount(target) ){
-			dbg_error("unable to umount %s: %m", target);
-		}
+		errno = 0;
+		umount(target);
 		rm(target);
-		dbg_info("umount %s", target);
+		dbg_info("umount %s: %m", target);
 	}
 	return 0;
 }

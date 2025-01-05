@@ -23,6 +23,7 @@ typedef struct overwriteArgs{
 	gid_t        gid;
 	const char*  path;
 	const char*  target;
+	option_s*    osa;
 	char**       argv;
 }overwriteArgs_s;
 
@@ -94,6 +95,28 @@ __private int privilege_drop(uid_t uid, gid_t gid ){
 	return 0;
 }
 
+__private rootHierarchy_s* script_find(rootHierarchy_s* root){
+	mforeach(root->child, i){
+		if( !strcmp(root->child[i].target, HESTIA_SCRIPT_ENT) ) return &root->child[i];
+	}
+	return NULL;
+}
+
+__private int script_run(overwriteArgs_s* arg){
+	rootHierarchy_s* script = script_find(arg->root);
+	if( !script ){
+		dbg_error("internal error, no script found");
+		return -1;
+	}
+	
+	mforeach(script->child, i){
+		const char* sa = i < arg->osa->set ? arg->osa->value[i].str : "";
+		__free char* cmd = str_printf("%s %s %s %u %u %s", script->child[i].src, arg->path, arg->target, arg->uid, arg->gid, sa);
+		if( shell(cmd) ) return -1;
+	}
+	return 0;
+}
+
 __private int overwrite(void* parg){
 	overwriteArgs_s* arg = parg;
 	__free char* mountpointRoot = str_printf("%s/%s", arg->path, arg->target);
@@ -109,6 +132,8 @@ __private int overwrite(void* parg){
 		return 1;
 	}
 	
+	if( script_run(arg) ) return 1;
+
 	if( change_root(mountpointRoot) ) return 1;
 	
 	if( privilege_drop(arg->uid, arg->gid) ) return 1;
@@ -119,16 +144,17 @@ __private int overwrite(void* parg){
 	return 1;
 }
 
-int hestia_launch(const char* destdir, const char* target, uid_t uid, gid_t gid, rootHierarchy_s* root, option_s* oex){
+int hestia_launch(const char* destdir, const char* target, uid_t uid, gid_t gid, rootHierarchy_s* root, option_s* oex, option_s* osa){
 	dbg_info("launch %s/%s", destdir, target);
 
 	overwriteArgs_s arg = {
-		.path    = destdir,
-		.target  = target,
-		.root    = root,
-		.gid     = gid,
-		.uid     = uid,
-		.argv    = MANY(char*, oex->set+2)
+		.path   = destdir,
+		.target = target,
+		.osa    = osa,
+		.root   = root,
+		.gid    = gid,
+		.uid    = uid,
+		.argv   = MANY(char*, oex->set+2)
 	};
 
 	dbg_info("set: %u", oex->set);

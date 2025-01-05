@@ -14,6 +14,7 @@ void colorbg_set(unsigned color);
 void bold_set(void);
 void print_repeats(unsigned count, const char* ch);
 void print_repeat(unsigned count, const char ch);
+int shell(const char* exec);
 int readline_yesno(void);
 
 #endif

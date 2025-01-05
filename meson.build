@@ -1,7 +1,7 @@
 ###########
 # project #
 ###########
-project('hestia', 'c', version: '0.0.0')
+project('hestia', 'c', version: '0.0.1')
 cc = meson.get_compiler('c')
 localPath = meson.current_source_dir()
 
@@ -10,7 +10,7 @@ type = 'executable'
 version = {
   'mmr': meson.project_version().split('.'),
   'str': meson.project_version(),
-  'dsc': 'begin'
+  'dsc': 'script config, more generic'
 }
 
 if get_option('eveloper')
@@ -24,10 +24,10 @@ if get_option('eveloper')
     run_command('git', 'push', '--follow-tags', check: true)
     message('update PKGBUILD')
     run_command('sed', '-i', '-r', '-e', 's/^pkgver=\'([^\']+)\'/pkgver=\'' + version['str'] + '\'/', './distro/PKGBUILD', check: true)
-    run_command('cp', './distro/PKGBUILD', './distro/auror/PKGBUILD', check: true)
-    run_command('bash', '-c', 'makepkg -D ./distro --printsrcinfo > ./distro/auror/.SRCINFO', check: true)
-    run_command('git', '-C', './distro/auror', 'commit', '-a', '-m', version['dsc'], check: true)
-    run_command('git', '-C', './distro/auror', 'push', check: true)
+    run_command('cp', './distro/PKGBUILD', './distro/' + meson.project_name() + '/PKGBUILD', check: true)
+    run_command('bash', '-c', 'makepkg -D ./distro --printsrcinfo > ./distro/' + meson.project_name() + '/.SRCINFO', check: true)
+    run_command('git', '-C', './distro/' + meson.project_name(), 'commit', '-a', '-m', version['dsc'], check: true)
+    run_command('git', '-C', './distro/' + meson.project_name(), 'push', check: true)
   endif
 endif
 
