@@ -1,7 +1,7 @@
 ###########
 # project #
 ###########
-project('hestia', 'c', version: '0.0.1')
+project('hestia', 'c', version: '0.0.2')
 cc = meson.get_compiler('c')
 localPath = meson.current_source_dir()
 
@@ -10,7 +10,7 @@ type = 'executable'
 version = {
   'mmr': meson.project_version().split('.'),
   'str': meson.project_version(),
-  'dsc': 'script config, more generic'
+  'dsc': 'remove target option, hide overlay inside sandbox'
 }
 
 if get_option('eveloper')

@@ -7,7 +7,7 @@
 #include <notstd/opt.h>
 #include <hestia/config.h>
 
-int hestia_launch(const char* destdir, const char* target, uid_t uid, gid_t gid, rootHierarchy_s* root, option_s* oex, option_s* osa);
+int hestia_launch(const char* destdir, uid_t uid, gid_t gid, rootHierarchy_s* root, option_s* oex, option_s* osa);
 
 
 #endif

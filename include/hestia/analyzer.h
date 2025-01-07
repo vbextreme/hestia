@@ -3,6 +3,6 @@
 
 #include <hestia/config.h>
 
-void hestia_analyze_root(const char* destdir, const char* target, rootHierarchy_s* root);
+void hestia_analyze_root(const char* destdir, rootHierarchy_s* root);
 
 #endif

@@ -326,8 +326,8 @@ __private void hierarchy_analyzer(rootHierarchy_s* h, const char* path, unsigned
 	}
 }
 
-void hestia_config_analyzer(const char* destdir, const char* name, rootHierarchy_s* root){
-	__free char* target = str_printf("%s/%s", destdir, name);
+void hestia_config_analyzer(const char* destdir, rootHierarchy_s* root){
+	__free char* target = str_printf("%s/root", destdir);
 	printf("%s\n", target);
 	mforeach(root->child, i){
 		hierarchy_analyzer(&root->child[i], target, 1);

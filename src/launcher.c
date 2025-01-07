@@ -22,7 +22,6 @@ typedef struct overwriteArgs{
 	uid_t        uid;
 	gid_t        gid;
 	const char*  path;
-	const char*  target;
 	option_s*    osa;
 	char**       argv;
 }overwriteArgs_s;
@@ -111,7 +110,7 @@ __private int script_run(overwriteArgs_s* arg){
 	
 	mforeach(script->child, i){
 		const char* sa = i < arg->osa->set ? arg->osa->value[i].str : "";
-		__free char* cmd = str_printf("%s %s %s %u %u %s", script->child[i].src, arg->path, arg->target, arg->uid, arg->gid, sa);
+		__free char* cmd = str_printf("%s %s %u %u %s", script->child[i].src, arg->path, arg->uid, arg->gid, sa);
 		if( shell(cmd) ) return -1;
 	}
 	return 0;
@@ -119,7 +118,7 @@ __private int script_run(overwriteArgs_s* arg){
 
 __private int overwrite(void* parg){
 	overwriteArgs_s* arg = parg;
-	__free char* mountpointRoot = str_printf("%s/%s", arg->path, arg->target);
+	__free char* mountpointRoot = str_printf("%s/root", arg->path);
 
 	__free char* oldroot = str_printf("%s/" HESTIA_MOUNT_OLD_ROOT, mountpointRoot);
 	mk_dir(oldroot, 0777);	
@@ -127,8 +126,8 @@ __private int overwrite(void* parg){
 		dbg_error("creating oldroot");
 		return -1;
 	}
-	if( hestia_mount(arg->path, arg->target, arg->root) ){
-		dbg_error("fail mount %s/%s", arg->path, arg->target);
+	if( hestia_mount(arg->path, arg->root) ){
+		dbg_error("fail mount %s/root", arg->path);
 		return 1;
 	}
 	
@@ -144,12 +143,11 @@ __private int overwrite(void* parg){
 	return 1;
 }
 
-int hestia_launch(const char* destdir, const char* target, uid_t uid, gid_t gid, rootHierarchy_s* root, option_s* oex, option_s* osa){
-	dbg_info("launch %s/%s", destdir, target);
+int hestia_launch(const char* destdir, uid_t uid, gid_t gid, rootHierarchy_s* root, option_s* oex, option_s* osa){
+	dbg_info("launch %s/root", destdir);
 
 	overwriteArgs_s arg = {
 		.path   = destdir,
-		.target = target,
 		.osa    = osa,
 		.root   = root,
 		.gid    = gid,
@@ -186,7 +184,7 @@ int hestia_launch(const char* destdir, const char* target, uid_t uid, gid_t gid,
 	mem_free(arg.argv);
 	return 0;
 ONERR:
-	hestia_umount(destdir, target, root);
+	hestia_umount(destdir, root);
 	munmap(newStack, SUBSTACKSIZE);
 	mem_free(arg.argv);
 	return -1;

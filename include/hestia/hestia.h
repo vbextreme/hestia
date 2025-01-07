@@ -3,7 +3,6 @@
 
 typedef enum{
 	O_d,
-	O_t,
 	O_c,
 	O_u,
 	O_g,

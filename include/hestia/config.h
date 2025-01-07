@@ -22,6 +22,6 @@ typedef struct rootHierarchy{
 int hestia_is_systemfs(const char* opt);
 rootHierarchy_s* hestia_load(const char* confname, uid_t uid, gid_t gid);
 
-void hestia_config_analyzer(const char* destdir, const char* target, rootHierarchy_s* sb);
-
+void hestia_config_analyzer(const char* destdir, rootHierarchy_s* root);
+	
 #endif

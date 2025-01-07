@@ -35,23 +35,24 @@ __private void dump_overlay(const char* path){
 	closedir(d);
 }
 
-__private void analyze_dump(rootHierarchy_s* h, const char* pathParent){
+__private void analyze_dump(rootHierarchy_s* h, const char* pathParent, const char* destdir){
 	__free char* target = str_printf("%s/%s", pathParent, h->target);
 	
 	if( !strcmp(h->type, "overlay") ){
-		__free char* upperdir = str_printf("%s/.%s.upper", pathParent, h->target);
+		__free char* upperdir = str_printf("%s/%s.upper", destdir, h->target);
 		dump_overlay(upperdir);
 	}
 	
 	mforeach(h->child, i){
-		analyze_dump(&h->child[i], target);
+		analyze_dump(&h->child[i], target, destdir);
 	}
 }
 
-void hestia_analyze_root(const char* destdir, const char* target, rootHierarchy_s* root){
-	__free char* path = str_printf("%s/%s", destdir, target);
+void hestia_analyze_root(const char* destdir, rootHierarchy_s* root){
+	__free char* path = str_printf("%s/root", destdir);
 	printf("@analyzer@%s\n", path);
 	mforeach(root->child, i){
-		analyze_dump(&root->child[i], path);
+		if( !strcmp(root->child[i].target, HESTIA_SCRIPT_ENT) ) continue;
+		analyze_dump(&root->child[i], path, destdir);
 	}
 }
