@@ -118,30 +118,30 @@ __private int overwrite(void* parg){
 	__free char* mountpointRoot = str_printf("%s/root", arg->path);
 	__free char* oldroot = str_printf("%s/" HESTIA_MOUNT_OLD_ROOT, mountpointRoot);
 
-
-	mk_dir(oldroot, 0777);	
-	if( mount(oldroot, oldroot, "bind", MS_BIND | MS_PRIVATE, NULL) ){
-		dbg_error("creating oldroot");
-		return -1;
-	}
-	if( hestia_mount(arg->path, arg->root) ){
-		dbg_error("fail mount %s/root", arg->path);
-		return 1;
-	}
-	if( command_script_run(arg, HESTIA_SCRIPT_ENT) ) return 1;
-
-	if( change_root(mountpointRoot) ) return 1;	
-	if( privilege_drop(arg->uid, arg->gid) ) return 1;
-	
-	rootHierarchy_s* chr = command_find(arg->root, HESTIA_CHDIR_ENT);
-	iassert(chr);
-	if( chr->src ){
-		if( chdir(chr->src) ){
-			dbg_error("chdir %s fail: %m", chr->src);
+	if( !dir_exists(mountpointRoot) ){
+		mk_dir(oldroot, 0777);	
+		if( mount(oldroot, oldroot, "bind", MS_BIND | MS_PRIVATE, NULL) ){
+			dbg_error("creating oldroot");
 			return -1;
 		}
-	}
+		if( hestia_mount(arg->path, arg->root) ){
+			dbg_error("fail mount %s/root", arg->path);
+			return 1;
+		}
+		if( command_script_run(arg, HESTIA_SCRIPT_ENT) ) return 1;
 
+		if( change_root(mountpointRoot) ) return 1;	
+		if( privilege_drop(arg->uid, arg->gid) ) return 1;
+		
+		rootHierarchy_s* chr = command_find(arg->root, HESTIA_CHDIR_ENT);
+		iassert(chr);
+		if( chr->src ){
+			if( chdir(chr->src) ){
+				dbg_error("chdir %s fail: %m", chr->src);
+				return -1;
+			}
+		}
+	}
 	dbg_info("good bye %u@%u", getuid(), getgid());
 	execv(arg->argv[0], arg->argv);
 	dbg_error("exec %s: %m", arg->argv[0]);
@@ -186,7 +186,7 @@ int hestia_launch(const char* destdir, uid_t uid, gid_t gid, rootHierarchy_s* ro
 		goto ONERR;
 	}
 
-	if( command_script_run(&arg, HESTIA_ATEXIT_ENT) ) return 1;
+	if( command_script_run(&arg, HESTIA_ATEXIT_ENT) ) goto ONERR;
 
 	munmap(newStack, SUBSTACKSIZE);
 	mem_free(arg.argv);

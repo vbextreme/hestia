@@ -1,4 +1,4 @@
-hestia v0.1.2
+hestia v0.1.3
 =============
 Introduction:
 =============
@@ -20,6 +20,7 @@ Manual Build
 
 State:
 ======
+* v0.1.3 reuse previuos mountpoint for execute new command
 * v0.1.2 analyzer empty line for easy way to wrap output
 * v0.1.1 analyzer previous mountpoint without exec
 * v0.1.0 option execute, detach meson.install, fix chdir command, option slurp only with valid option, fix analyzer with global command

@@ -1,7 +1,7 @@
 ###########
 # project #
 ###########
-project('hestia', 'c', version: '0.1.2')
+project('hestia', 'c', version: '0.1.3')
 cc = meson.get_compiler('c')
 localPath = meson.current_source_dir()
 
@@ -10,7 +10,7 @@ type = 'executable'
 version = {
   'mmr': meson.project_version().split('.'),
   'str': meson.project_version(),
-  'dsc': 'analyzer empty line for easy way to wrap output'
+  'dsc': 'reuse previuos mountpoint for execute new command'
 }
 
 if get_option('eveloper')
