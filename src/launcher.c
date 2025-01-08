@@ -116,8 +116,9 @@ __private int command_script_run(overwriteArgs_s* arg, const char* cmd){
 __private int overwrite(void* parg){
 	overwriteArgs_s* arg = parg;
 	__free char* mountpointRoot = str_printf("%s/root", arg->path);
-
 	__free char* oldroot = str_printf("%s/" HESTIA_MOUNT_OLD_ROOT, mountpointRoot);
+
+
 	mk_dir(oldroot, 0777);	
 	if( mount(oldroot, oldroot, "bind", MS_BIND | MS_PRIVATE, NULL) ){
 		dbg_error("creating oldroot");
@@ -127,11 +128,9 @@ __private int overwrite(void* parg){
 		dbg_error("fail mount %s/root", arg->path);
 		return 1;
 	}
-	
 	if( command_script_run(arg, HESTIA_SCRIPT_ENT) ) return 1;
 
-	if( change_root(mountpointRoot) ) return 1;
-	
+	if( change_root(mountpointRoot) ) return 1;	
 	if( privilege_drop(arg->uid, arg->gid) ) return 1;
 	
 	rootHierarchy_s* chr = command_find(arg->root, HESTIA_CHDIR_ENT);

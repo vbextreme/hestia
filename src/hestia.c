@@ -56,8 +56,8 @@ int main(int argc, char** argv){
 		return 0;
 	}
 
-	if( hestia_launch(destdir, opt[O_u].value->ui, opt[O_g].value->ui, root, &opt[O_e], &opt[O_A]) ) return 1;
-	
+	if( opt[O_e].set && hestia_launch(destdir, opt[O_u].value->ui, opt[O_g].value->ui, root, &opt[O_e], &opt[O_A]) ) return 1;
+
 	if( opt[O_a].set ) hestia_analyze_root(destdir, root);
 
 	if( opt[O_P].set ) return 0;
