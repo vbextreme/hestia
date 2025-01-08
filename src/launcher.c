@@ -94,20 +94,17 @@ __private int privilege_drop(uid_t uid, gid_t gid ){
 	return 0;
 }
 
-__private rootHierarchy_s* script_find(rootHierarchy_s* root){
+__private rootHierarchy_s* command_find(rootHierarchy_s* root, const char* cmd){
 	mforeach(root->child, i){
-		if( !strcmp(root->child[i].target, HESTIA_SCRIPT_ENT) ) return &root->child[i];
+		if( !strcmp(root->child[i].target, cmd) ) return &root->child[i];
 	}
 	return NULL;
 }
 
-__private int script_run(overwriteArgs_s* arg){
-	rootHierarchy_s* script = script_find(arg->root);
-	if( !script ){
-		dbg_error("internal error, no script found");
-		return -1;
-	}
-	
+__private int command_script_run(overwriteArgs_s* arg, const char* cmd){
+	rootHierarchy_s* script = command_find(arg->root, cmd);
+	iassert(script);
+
 	mforeach(script->child, i){
 		const char* sa = i < arg->osa->set ? arg->osa->value[i].str : "";
 		__free char* cmd = str_printf("%s %s %u %u %s", script->child[i].src, arg->path, arg->uid, arg->gid, sa);
@@ -131,12 +128,21 @@ __private int overwrite(void* parg){
 		return 1;
 	}
 	
-	if( script_run(arg) ) return 1;
+	if( command_script_run(arg, HESTIA_SCRIPT_ENT) ) return 1;
 
 	if( change_root(mountpointRoot) ) return 1;
 	
 	if( privilege_drop(arg->uid, arg->gid) ) return 1;
 	
+	rootHierarchy_s* chr = command_find(arg->root, HESTIA_CHDIR_ENT);
+	iassert(chr);
+	if( mem_header(chr->child)->len ){
+		if( chdir(chr->child[0].src) ){
+			dbg_error("chdir %s fail: %m", chr->child[0].src);
+			return -1;
+		}
+	}
+
 	dbg_info("good bye %u@%u", getuid(), getgid());
 	execv(arg->argv[0], arg->argv);
 	dbg_error("exec %s: %m", arg->argv[0]);
@@ -180,6 +186,9 @@ int hestia_launch(const char* destdir, uid_t uid, gid_t gid, rootHierarchy_s* ro
 		dbg_error("execd app return error");
 		goto ONERR;
 	}
+
+	if( command_script_run(&arg, HESTIA_ATEXIT_ENT) ) return 1;
+
 	munmap(newStack, SUBSTACKSIZE);
 	mem_free(arg.argv);
 	return 0;
@@ -189,45 +198,4 @@ ONERR:
 	mem_free(arg.argv);
 	return -1;
 }
-
-/*
-int hestia_build_script(const char* buildpath, const char* pkgname, option_s* makedeps, uid_t uid, gid_t gid){
-	__free char* buildscript = str_printf("%s/buildscript", buildpath);
-	FILE* f = fopen(buildscript, "w");
-	if( !f ){
-		dbg_error("on open %s: %m", buildscript);
-		return -1;
-	}
-	
-	fputs("#!/bin/bash\n", f);
-	fputs("cd /build\n", f);
-	if( makedeps->set ){
-		fputs("echo 'install make dependency, need root password for call pacman'\n", f);
-		fputs("sudo pacman --needed --asdeps -S", f);
-		mforeach(makedeps->value, i){
-			fprintf(f, " %s", makedeps->value[i].str);
-		}
-		fputc('\n', f);
-	}
-	fputs("echo 'download'\n", f);
-	fprintf(f, "git clone https://aur.archlinux.org/%s.git\n", pkgname);
-	fprintf(f, "cp %s/PKGBUILD ./PKGBUILD\n", pkgname);
-	fputs("echo 'create package'\n", f);
-	fputs("makepkg\n", f);
-	
-	fclose(f);
-	chown(buildscript, uid, gid);
-	chmod(buildscript, 0770);
-
-	return 0;
-}
-
-int hestia_install_pkg(const char* path){
-	__free const char* command = str_printf("makepkg -D %s --install", path);
-	int ret = system(command);
-	if( ret == -1 ) return -1;
-	if( !WIFEXITED(ret) || WEXITSTATUS(ret) != 0) return -1;
-	return 0;
-}
-*/
 

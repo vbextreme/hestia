@@ -126,7 +126,7 @@ __private unsigned long option_num(const char** parse, int base, uid_t uid, gid_
 	else if( !strncmp(p, "%g", 2) ){
 		unsigned long ret = gid;
 		p += 2;
-		if( *p != ' ' && *p != '\t' && *p != '\n' ) die("invalid char after %%u");
+		if( *p != ' ' && *p != '\t' && *p != '\n' ) die("invalid char after %%g");
 		*parse = p;
 		return ret;
 	}
@@ -287,6 +287,21 @@ __private void config_parse(rootHierarchy_s* rh, const char* parse, uid_t setuid
 			ch->type = mem_borrowed(cmd);
 			ch->src  = script_check(scriptname);
 		}
+		else if( !strcmp(cmd, "atexit") ){
+			__free char* scriptname  = option_get(&parse, 0, homedir);
+			__free char* scriptent   = str_printf("%s/%s", HESTIA_ATEXIT_ENT, scriptname);
+			rootHierarchy_s* ch = new_target(rh, scriptent);
+			ch->type = mem_borrowed(cmd);
+			ch->src  = script_check(scriptname);
+		}
+		else if( !strcmp(cmd, "chdir") ){
+			__free char* pathname = option_get(&parse, 0, homedir);
+			__free char* fullpath = path_explode(pathname);
+			       char* chdirent = str_printf("%s/%s", HESTIA_CHDIR_ENT, fullpath);
+			rootHierarchy_s* ch = new_target(rh, chdirent);
+			ch->type = mem_borrowed(cmd);
+			ch->src  = chdirent;
+		}
 		else{
 			die("unknown option '%s'", cmd);
 		}
@@ -301,8 +316,10 @@ rootHierarchy_s* hestia_load(const char* confname, uid_t uid, gid_t gid){
 	__free char* home = str_dup(pwd->pw_dir, 0);
 	rootHierarchy_s* rh = NEW(rootHierarchy_s);
 	memset(rh, 0, sizeof(rootHierarchy_s));
-	rh->child = MANY(rootHierarchy_s, 4);
+	rh->child = MANY(rootHierarchy_s, 24);
 	new_target(rh, HESTIA_SCRIPT_ENT);
+	new_target(rh, HESTIA_ATEXIT_ENT);
+	new_target(rh, HESTIA_CHDIR_ENT );
 	__free char* conf = config_load(confname);
 	config_parse(rh, conf, uid, gid, home);
 	return rh;

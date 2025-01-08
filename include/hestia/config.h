@@ -5,7 +5,10 @@
 
 #define HESTIA_CONFIG_PATH "/etc/hestia/config.d"
 #define HESTIA_SCRIPT_PATH "/etc/hestia/script.d"
+#define HESTIA_CMD_CHR     '@'
 #define HESTIA_SCRIPT_ENT  "@SCRIPT@"
+#define HESTIA_ATEXIT_ENT  "@ATEXIT@"
+#define HESTIA_CHDIR_ENT   "@CHDIR@"
 
 typedef struct rootHierarchy{
 	struct rootHierarchy* child;
