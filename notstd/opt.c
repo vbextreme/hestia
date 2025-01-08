@@ -17,7 +17,6 @@ typedef struct optctx{
 	unsigned  paarg;
 	unsigned  paoff;
 	unsigned  count;
-	int       slurp;
 }optctx_s;
 
 __private void opt_die(optctx_s* ctx, const char* desc){
@@ -186,13 +185,6 @@ __private void opt_value(optctx_s* ctx, unsigned id, const char* value){
 
 __private int opt_set(optctx_s* ctx, int id){
 	if( id == -1 ){
-		if( ctx->slurp >= 0 ){
-			while( ctx->current < ctx->argc ){
-				++ctx->opt[ctx->slurp].set;
-			   	opt_value_new(ctx->opt, ctx->slurp)->str = ctx->argv[ctx->current++];
-			}
-			return 1;
-		}
 		ctx->current = ctx->paarg;
 		opt_die(ctx, "unknow option");
 	}
@@ -217,6 +209,12 @@ __private void add_to_option(optctx_s* ctx, int id, kv_s* kv){
 	}
 	else if( kv && *kv->value ){
 		opt_die(ctx, "optiont unaspected value");
+	}
+	if( ctx->opt[id].flags & OPT_SLURP ){
+		while( ++ctx->current < ctx->argc ){
+			++ctx->opt[id].set;
+			opt_value_new(ctx->opt, id)->str = ctx->argv[ctx->current];
+		}
 	}
 }
 
@@ -254,11 +252,9 @@ option_s* argv_parse(option_s* opt, int argc, char** argv){
 		.paoff     = 0,
 		.opt       = opt,
 		.count     = copt,
-		.slurp     = -1
 	};
 	
 	for( unsigned i = 0; i < copt; ++i ){
-		if( opt[i].flags & OPT_SLURP ) ctx.slurp = i;
 		opt[i].value = MANY(optValue_u, 2);
 		opt[i].set = 0;
 	}

@@ -1,7 +1,13 @@
 #!/bin/bash
 
+if [ -z "${MESON_SOURCE_ROOT}" ]; then
+	MESON_SOURCE_ROOT='.'
+fi
+
 conf="${MESON_SOURCE_ROOT}/config"
 dest="${DESTDIR}/etc/hestia/config.d"
+
+[[ -d "$conf" ]] || exit 1
 
 mkdir -p dest
 cp $conf/* $dest/

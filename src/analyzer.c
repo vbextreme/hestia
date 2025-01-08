@@ -52,7 +52,7 @@ void hestia_analyze_root(const char* destdir, rootHierarchy_s* root){
 	__free char* path = str_printf("%s/root", destdir);
 	printf("@analyzer@%s\n", path);
 	mforeach(root->child, i){
-		if( !strcmp(root->child[i].target, HESTIA_SCRIPT_ENT) ) continue;
+		if( root->child[i].target[0] == HESTIA_CMD_CHR ) continue;
 		analyze_dump(&root->child[i], path, destdir);
 	}
 }

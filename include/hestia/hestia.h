@@ -10,7 +10,7 @@ typedef enum{
 	O_z,
 	O_a,
 	O_A,
-	O_exec,
+	O_e,
 	O_h
 }OPT_E;
 

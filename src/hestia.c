@@ -26,8 +26,8 @@ option_s OPT[] = {
 	{'P', "--preserve"    , "no remove sandbox at end", OPT_NOARG, 0, 0},
 	{'z', "--clean"       , "clean previous sandbox"  , OPT_NOARG, 0, 0},
 	{'a', "--analyzer"    , "show important change"   , OPT_NOARG, 0, 0},
-	{'A', "--script-arg"  , "set script arguments"    , OPT_ARRAY | OPT_STR  , 0, 0},
-	{'\0', ""             , "execute"                 , OPT_SLURP, 0, 0},
+	{'A', "--script-arg"  , "set script arguments"    , OPT_ARRAY | OPT_STR, 0, 0},
+	{'e', "--execute"     , "execute"                 , OPT_SLURP | OPT_STR, 0, 0},
 	{'h', "--help"        , "display this"            , OPT_END | OPT_NOARG, 0, 0}
 };
 
@@ -56,7 +56,7 @@ int main(int argc, char** argv){
 		return 0;
 	}
 
-	if( hestia_launch(destdir, opt[O_u].value->ui, opt[O_g].value->ui, root, &opt[O_exec], &opt[O_A]) ) return 1;
+	if( hestia_launch(destdir, opt[O_u].value->ui, opt[O_g].value->ui, root, &opt[O_e], &opt[O_A]) ) return 1;
 	
 	if( opt[O_a].set ) hestia_analyze_root(destdir, root);
 

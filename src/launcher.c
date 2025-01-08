@@ -136,9 +136,9 @@ __private int overwrite(void* parg){
 	
 	rootHierarchy_s* chr = command_find(arg->root, HESTIA_CHDIR_ENT);
 	iassert(chr);
-	if( mem_header(chr->child)->len ){
-		if( chdir(chr->child[0].src) ){
-			dbg_error("chdir %s fail: %m", chr->child[0].src);
+	if( chr->src ){
+		if( chdir(chr->src) ){
+			dbg_error("chdir %s fail: %m", chr->src);
 			return -1;
 		}
 	}

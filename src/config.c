@@ -296,11 +296,12 @@ __private void config_parse(rootHierarchy_s* rh, const char* parse, uid_t setuid
 		}
 		else if( !strcmp(cmd, "chdir") ){
 			__free char* pathname = option_get(&parse, 0, homedir);
-			__free char* fullpath = path_explode(pathname);
-			       char* chdirent = str_printf("%s/%s", HESTIA_CHDIR_ENT, fullpath);
-			rootHierarchy_s* ch = new_target(rh, chdirent);
-			ch->type = mem_borrowed(cmd);
-			ch->src  = chdirent;
+			mforeach(rh->child, i){
+				if( !strcmp(rh->child[i].target, HESTIA_CHDIR_ENT) ){
+					rh->child[i].src = path_explode(pathname);
+					break;
+				}
+			}
 		}
 		else{
 			die("unknown option '%s'", cmd);
