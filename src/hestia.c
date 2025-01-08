@@ -49,7 +49,7 @@ int main(int argc, char** argv){
 
 	rootHierarchy_s* root = hestia_load(opt[O_c].value->str, opt[O_u].value->ui, opt[O_g].value->ui);
 
-	hestia_config_analyzer(destdir, root);
+	//hestia_config_analyzer(destdir, root);
 
 	if( opt[O_z].set ){
 		hestia_umount(destdir, root);

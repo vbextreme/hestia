@@ -55,4 +55,5 @@ void hestia_analyze_root(const char* destdir, rootHierarchy_s* root){
 		if( root->child[i].target[0] == HESTIA_CMD_CHR ) continue;
 		analyze_dump(&root->child[i], path, destdir);
 	}
+	puts("");
 }
