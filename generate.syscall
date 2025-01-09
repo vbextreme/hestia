@@ -1,0 +1,21 @@
+#!/bin/bash
+
+out=$1
+sysc=$(cat /usr/include/bits/syscall.h | grep '^#ifdef __NR_' | cut -d\  -f2)
+
+echo '#include <sys/syscall.h>' > $out
+echo '' >> $out
+echo 'char* SYSTEMCALLNAME[] ={' >> $out
+
+for sysnr in ${sysc[@]}; do
+	sysname=$(echo $sysnr | sed -r -e  's/__NR_//')
+	echo "#ifdef $sysnr" >> $out
+	echo -e "\t[${sysnr}] = \"$sysname\"," >> $out
+	echo "#endif" >> $out
+done
+
+echo '};' >> $out
+
+echo 'unsigned const SYSTEMCALLNAMECOUNT = sizeof(SYSTEMCALLNAME) / sizeof(SYSTEMCALLNAME[0]);' >> $out
+
+

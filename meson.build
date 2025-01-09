@@ -1,7 +1,7 @@
 ###########
 # project #
 ###########
-project('hestia', 'c', version: '0.1.4')
+project('hestia', 'c', version: '0.1.5')
 cc = meson.get_compiler('c')
 localPath = meson.current_source_dir()
 
@@ -10,7 +10,7 @@ type = 'executable'
 version = {
   'mmr': meson.project_version().split('.'),
   'str': meson.project_version(),
-  'dsc': 'change umount from config to system, disable reuse old sandbox, add sysdeny config for disable systemcall'
+  'dsc': 'missing some files'
 }
 
 if get_option('eveloper')
