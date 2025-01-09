@@ -1,7 +1,7 @@
 ###########
 # project #
 ###########
-project('hestia', 'c', version: '0.1.3')
+project('hestia', 'c', version: '0.1.4')
 cc = meson.get_compiler('c')
 localPath = meson.current_source_dir()
 
@@ -10,7 +10,7 @@ type = 'executable'
 version = {
   'mmr': meson.project_version().split('.'),
   'str': meson.project_version(),
-  'dsc': 'reuse previuos mountpoint for execute new command'
+  'dsc': 'change umount from config to system, disable reuse old sandbox, add sysdeny config for disable systemcall'
 }
 
 if get_option('eveloper')
@@ -62,6 +62,7 @@ src += [ 'src/hestia.c' ]
 src += [ 'src/launcher.c' ]
 src += [ 'src/config.c' ]
 src += [ 'src/analyzer.c' ]
+src += [ 'src/system.c' ]
 
 ##############
 # data files #
@@ -162,6 +163,13 @@ libDeps += [ dependency('readline', required: true) ]
 #################
 # Custom Target #
 #################
+generate_syscall = find_program('generate.syscall')
+target_syscall = custom_target('target_syscall',
+  output : 'systemcallname.c',
+  command : [generate_syscall, '@OUTPUT@'],
+  #build_by_default: true,
+)
+src += [target_syscall]
 
 #########
 # debug #

@@ -90,6 +90,8 @@ void* mem_widen(void* mem, size_t index, size_t count);
 void* mem_insert(void* restrict dst, size_t index, void* restrict src, size_t count);
 
 void* mem_push(void* restrict dst, void* restrict element);
+//dst &mem
+unsigned mem_ipush(void* restrict dst);
 
 void* mem_pop(void* restrict mem, void* restrict element);
 

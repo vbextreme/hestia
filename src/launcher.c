@@ -16,6 +16,7 @@
 #include <hestia/launcher.h>
 #include <hestia/inutility.h>
 #include <hestia/mount.h>
+#include <hestia/system.h>
 
 typedef struct overwriteArgs{
 	rootHierarchy_s* root;
@@ -63,7 +64,7 @@ __private int privilege_drop(uid_t uid, gid_t gid ){
 
 	struct passwd* pw = getpwuid(uid);
 	if(pw == NULL){
-		dbg_error("getpwuid error: m");
+		dbg_error("getpwuid error: %m");
 		return -1;
 	}
 	getgrouplist(pw->pw_name, pw->pw_gid, NULL, &totalgroups);
@@ -118,30 +119,47 @@ __private int overwrite(void* parg){
 	__free char* mountpointRoot = str_printf("%s/root", arg->path);
 	__free char* oldroot = str_printf("%s/" HESTIA_MOUNT_OLD_ROOT, mountpointRoot);
 
-	if( !dir_exists(mountpointRoot) ){
-		mk_dir(oldroot, 0777);	
-		if( mount(oldroot, oldroot, "bind", MS_BIND | MS_PRIVATE, NULL) ){
-			dbg_error("creating oldroot");
+	if( dir_exists(mountpointRoot) ) hestia_umount(arg->path);
+	mk_dir(oldroot, 0777);	
+	if( mount(oldroot, oldroot, "bind", MS_BIND | MS_PRIVATE, NULL) ){
+		dbg_error("creating oldroot");
+		return -1;
+	}
+	if( hestia_mount(arg->path, arg->root) ){
+		dbg_error("fail mount %s/root", arg->path);
+		return 1;
+	}
+	if( command_script_run(arg, HESTIA_SCRIPT_ENT) ) return 1;
+
+	if( change_root(mountpointRoot) ) return 1;	
+
+	rootHierarchy_s* sys = command_find(arg->root, HESTIA_SYSCALL_ENT);
+	iassert(sys);
+	if( sys->src ){
+		char** lcall = split_h(sys->src);
+		int ret = systemcall_deny(lcall, mem_header(lcall)->len);
+		mforeach(lcall, i){
+			mem_free(lcall[i]);
+		}
+		mem_free(lcall);
+		if( ret ){
+			dbg_error("fail to deny syscall");
 			return -1;
 		}
-		if( hestia_mount(arg->path, arg->root) ){
-			dbg_error("fail mount %s/root", arg->path);
-			return 1;
-		}
-		if( command_script_run(arg, HESTIA_SCRIPT_ENT) ) return 1;
+	}
 
-		if( change_root(mountpointRoot) ) return 1;	
-		if( privilege_drop(arg->uid, arg->gid) ) return 1;
+	if( privilege_drop(arg->uid, arg->gid) ) return 1;
 		
-		rootHierarchy_s* chr = command_find(arg->root, HESTIA_CHDIR_ENT);
-		iassert(chr);
-		if( chr->src ){
-			if( chdir(chr->src) ){
-				dbg_error("chdir %s fail: %m", chr->src);
-				return -1;
-			}
+	rootHierarchy_s* chr = command_find(arg->root, HESTIA_CHDIR_ENT);
+	iassert(chr);
+	if( chr->src ){
+		if( chdir(chr->src) ){
+			dbg_error("chdir %s fail: %m", chr->src);
+			return -1;
 		}
 	}
+	
+	
 	dbg_info("good bye %u@%u", getuid(), getgid());
 	execv(arg->argv[0], arg->argv);
 	dbg_error("exec %s: %m", arg->argv[0]);
@@ -192,7 +210,7 @@ int hestia_launch(const char* destdir, uid_t uid, gid_t gid, rootHierarchy_s* ro
 	mem_free(arg.argv);
 	return 0;
 ONERR:
-	hestia_umount(destdir, root);
+	hestia_umount(destdir);
 	munmap(newStack, SUBSTACKSIZE);
 	mem_free(arg.argv);
 	return -1;

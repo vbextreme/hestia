@@ -10,6 +10,19 @@
 #include <dirent.h>
 #include <sys/stat.h>
 
+char** split_h(const char* str){
+	char** ret = MANY(char*, 8);
+	const char* next = str;
+	do{
+		const char* start = next;
+		next = strchrnul(next, ' ');
+		unsigned in = mem_ipush(&ret);
+		ret[in] = str_dup(start, next-start);
+		next = str_skip_h(next);
+	}while( *next );
+	return ret;
+}
+
 char* load_file(const char* fname, int exists){
 	dbg_info("loading %s", fname);
 	int fd = open(fname, O_RDONLY);
@@ -227,7 +240,6 @@ int readline_yesno(void){
 	free(in);
 	return ret;
 }
-
 
 
 

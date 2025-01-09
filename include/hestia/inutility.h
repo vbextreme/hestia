@@ -1,6 +1,8 @@
 #ifndef __INUTILITY_H__
 #define __INUTILITY_H__
 
+char** split_h(const char* str);
+
 char* load_file(const char* fname, int exists);
 int vercmp(const char *a, const char *b);
 char* path_home(char* path);

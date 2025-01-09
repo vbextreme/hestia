@@ -5,8 +5,8 @@
 #include <hestia/config.h>
 #include <hestia/mount.h>
 
-//CAP_SYS_ADMIN
 #include <sys/mount.h>
+#include <mntent.h>
 #include <sys/stat.h>
 #include <dirent.h>
 #include <pwd.h>
@@ -21,7 +21,8 @@ __private int hierarchy_mount(rootHierarchy_s* h, const char* pathParent, const 
 		src = bsrc;
 	}
 
-	if( hestia_is_systemfs(h->type) ){
+	if( !src && (src=hestia_is_systemfs(h->type)) ){
+		dbg_info("mount(%s, %s, %s, %X, %s", src, target, h->type, h->flags, h->mode);
 		if( mount(src, target, h->type, h->flags, h->mode) ){
 			dbg_error("mount.error src:'%s' '%s'::%s [%s]::%m", h->src, target, h->type, h->mode);
 			return -1;
@@ -41,7 +42,7 @@ __private int hierarchy_mount(rootHierarchy_s* h, const char* pathParent, const 
 		mk_dir(upperdir, h->privilege);
 		mk_dir(workdir , h->privilege);
 		mk_dir(ttarget , h->privilege);
-		if( mount(NULL, ttarget, h->type, h->flags, overmode) ){
+		if( mount("overlay", ttarget, h->type, h->flags, overmode) ){
 			dbg_error("mount.error src:'%s' '%s'::%s [%s@%X]::%m", h->src, target, h->type, overmode, h->flags);
 			return -1;
 		}
@@ -89,39 +90,52 @@ int hestia_mount(const char* destdir, rootHierarchy_s* root){
 	return 0;
 }
 
-__private int hierarchy_umount(rootHierarchy_s* h, const char* path, const char* destdir){
-	__free char* target = str_printf("%s/%s", path, h->target);
-	mforeach(h->child, i){
-		hierarchy_umount(&h->child[i], target, destdir);
-	}
-	
-	if( dir_exists(target) ){
-		errno = 0;
-		umount(target);
-		rm(target);
-		dbg_info("umount %s: %m", target);
-		if( !strcmp(h->type, "overlay") ){
-			__free char* upperdir = str_printf("%s/%s.upper", destdir, h->target);
-			__free char* workdir  = str_printf("%s/%s.work", destdir, h->target);
-			__free char* ttarget  = str_printf("%s/%s.merge", destdir, h->target);
-			umount(ttarget);
-			rmdir(ttarget);
-			rm(upperdir);
-			rm(workdir);
-		}
-	}
-	return 0;
+__private int mount_cmp(const void* A, const void* B){
+	return strcmp(B, A);
 }
 
-int hestia_umount(const char* destdir, rootHierarchy_s* root){
-	__free char* path = str_printf("%s/root", destdir);
-	dbg_info("umount hierarchy %s", path);
-	mforeach(root->child, i){
-		if( root->child[i].target[0] == HESTIA_CMD_CHR ) continue;
-		hierarchy_umount(&root->child[i], path, destdir);
+__private char** mount_list(const char* match){
+	unsigned const len = strlen(match);
+	struct mntent *ent;
+	FILE* mf = setmntent("/proc/mounts", "r");
+	if( !mf ) die("unable to get list of mount: %m");
+	char** lst = MANY(char*, 24);
+	while( (ent = getmntent(mf)) ){
+		if( strncmp(ent->mnt_dir, match, len) ) continue;
+		unsigned ni = mem_ipush(&lst);
+		lst[ni] = str_dup(ent->mnt_dir, 0);
 	}
-	umount(path);
-	rm(path);
+	mem_qsort(lst, mount_cmp);
+	endmntent(mf);
+	return lst;
+}
+
+__private void overlay_rmdir(const char* destdir){
+	DIR* d = opendir(destdir);
+	if( !d ) die("unable to open destdir");
+	struct dirent* ent;
+	while( (ent=readdir(d)) ){
+		char* name = strrchr(ent->d_name, '.');
+		if( !name ) continue;
+		if( !strcmp(name, ".upper") || !strcmp(name, ".work") ){
+			__free char* path = str_printf("%s/%s", destdir, ent->d_name);
+			dbg_info("overlay.rm %s", path);
+			rm(path);
+		}
+	}
+	closedir(d);
+}
+
+int hestia_umount(const char* destdir){
+	char** lstmnt = mount_list(destdir);
+	mforeach(lstmnt, i){
+		dbg_info("umount %s", lstmnt[i]);
+		umount(lstmnt[i]);
+		rm(lstmnt[i]);
+		mem_free(lstmnt[i]);
+	}
+	mem_free(lstmnt);
+	overlay_rmdir(destdir);
 	return 0;
 }
 

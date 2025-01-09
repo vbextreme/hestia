@@ -37,32 +37,30 @@ int main(int argc, char** argv){
 	notstd_begin();
 	
 	__argv option_s* opt = argv_parse(OPT, argc, argv);
-	if( opt[O_h].set ) argv_usage(opt, argv[0]);
-
 	argv_default_num(opt, O_u, 1000);
 	argv_default_num(opt, O_g, 1000);
 
-	if( !opt[O_d].set ) die("required destdir");
-	if( !opt[O_c].set ) die("required config name");
+	if( opt[O_h].set ) argv_usage(opt, argv[0]);
 
+	if( !opt[O_d].set ) die("required destdir");
 	__free char* destdir   = path_explode(opt[O_d].value->str);
+
+	if( opt[O_z].set ){
+		hestia_umount(destdir);
+		return 0;
+	}
+
+	if( !opt[O_c].set ) die("required config name");
+	//hestia_config_analyzer(destdir, root);
 
 	rootHierarchy_s* root = hestia_load(opt[O_c].value->str, opt[O_u].value->ui, opt[O_g].value->ui);
 
-	//hestia_config_analyzer(destdir, root);
-
-	if( opt[O_z].set ){
-		hestia_umount(destdir, root);
-		return 0;
-	}
 
 	if( opt[O_e].set && hestia_launch(destdir, opt[O_u].value->ui, opt[O_g].value->ui, root, &opt[O_e], &opt[O_A]) ) return 1;
 
 	if( opt[O_a].set ) hestia_analyze_root(destdir, root);
 
-	if( opt[O_P].set ) return 0;
-
-	hestia_umount(destdir, root);
+	if( !opt[O_P].set ) hestia_umount(destdir);
 
 	
 	return 0;

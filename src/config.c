@@ -60,7 +60,6 @@
  * dir %D
  *
  * auror.exec
- * exec /build/scriptbuild
  *
  * auror.normal
  * use system.sb
@@ -75,6 +74,13 @@
  * use os.config
  * use auror
  * use auror.exec
+ *
+ * //execute before change root only first time
+ * script scriptname
+ * //execute after hestia stop, before umount
+ * atexit scriptname
+ * 
+ * sysdeny mknod
  *
 */
 
@@ -111,6 +117,16 @@ __private char* option_get(const char** parse, int optional, const char* homedir
 		return str_dup(&homedir[1], 0);
 	}
 	return str_dup(stname, p - stname);
+}
+
+__private char* option_slurp(const char** parse){
+	const char* p = *parse;
+	p = str_skip_h(p);
+	const char* st = p;
+	while( *p && *p != '\n' ) ++p;
+	if( p == st ) die("aspected option in config");
+	*parse = p;
+	return str_dup(st, p - st);
 }
 
 __private unsigned long option_num(const char** parse, int base, uid_t uid, gid_t gid){
@@ -155,13 +171,14 @@ __private unsigned option_flags(const char** parse){
 	return ret;
 }
 
+
 __private const char* option_end(const char* parse){
 	parse = str_skip_h(parse);
 	if( *parse != '\n' ) die("aspected end of line at end of line");
 	return str_skip_hn(parse);
 }
 
-int hestia_is_systemfs(const char* opt){
+const char* hestia_is_systemfs(const char* opt){
 	__private const char* systemfs[] = {
 		"proc",
 		"sysfs",
@@ -169,10 +186,17 @@ int hestia_is_systemfs(const char* opt){
 		"devpts",
 		"tmpfs"
 	};
+	__private const char* systemname[] = {
+		"proc",
+		"sys",
+		"dev",
+		"devpts",
+		"tmpfs"
+	};
 	for( unsigned i = 0; i < sizeof_vector(systemfs); ++i ){
-		if( !strcmp(opt, systemfs[i]) ) return 1;
+		if( !strcmp(opt, systemfs[i]) ) return systemname[i];
 	}
-	return 0;
+	return NULL;
 }
 
 __private rootHierarchy_s* rh_findchild(rootHierarchy_s* rh, const char* name, unsigned len){
@@ -298,7 +322,25 @@ __private void config_parse(rootHierarchy_s* rh, const char* parse, uid_t setuid
 			__free char* pathname = option_get(&parse, 0, homedir);
 			mforeach(rh->child, i){
 				if( !strcmp(rh->child[i].target, HESTIA_CHDIR_ENT) ){
+					mem_free(rh->child[i].src);
 					rh->child[i].src = path_explode(pathname);
+					break;
+				}
+			}
+		}
+		else if( !strcmp(cmd, "sysdeny") ){
+			char* slurp = option_slurp(&parse);
+			mforeach(rh->child, i){
+				if( !strcmp(rh->child[i].target, HESTIA_SYSCALL_ENT) ){
+					char* tmp = rh->child[i].src;
+					if( tmp ){
+						rh->child[i].src = str_printf("%s %s", tmp, slurp);
+						mem_free(tmp);
+						mem_free(slurp);
+					}
+					else{
+						rh->child[i].src = slurp;
+					}
 					break;
 				}
 			}
@@ -321,6 +363,7 @@ rootHierarchy_s* hestia_load(const char* confname, uid_t uid, gid_t gid){
 	new_target(rh, HESTIA_SCRIPT_ENT);
 	new_target(rh, HESTIA_ATEXIT_ENT);
 	new_target(rh, HESTIA_CHDIR_ENT );
+	new_target(rh, HESTIA_SYSCALL_ENT );
 	__free char* conf = config_load(confname);
 	config_parse(rh, conf, uid, gid, home);
 	return rh;

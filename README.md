@@ -1,4 +1,4 @@
-hestia v0.1.3
+hestia v0.1.4
 =============
 Introduction:
 =============
@@ -20,6 +20,7 @@ Manual Build
 
 State:
 ======
+* v0.1.4 change umount from config to system, disable reuse old sandbox, add sysdeny config for disable systemcall
 * v0.1.3 reuse previuos mountpoint for execute new command
 * v0.1.2 analyzer empty line for easy way to wrap output
 * v0.1.1 analyzer previous mountpoint without exec

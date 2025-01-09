@@ -251,6 +251,12 @@ void* mem_push(void* restrict dst, void* restrict element){
 	return dst;
 }
 
+unsigned mem_ipush(void* restrict pdst){
+	*(void**)pdst = mem_upsize(*(void**)pdst, 1);
+	hmem_s* hm = givehm(*(void**)pdst);
+	return hm->len++;
+}
+
 void* mem_pop(void* restrict mem, void* restrict element){
 	hmem_s* hm = givehm(mem);
 	if( !hm->len ) return NULL;
