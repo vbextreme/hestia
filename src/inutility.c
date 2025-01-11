@@ -6,9 +6,9 @@
 #include <ctype.h>
 #include <pwd.h>
 #include <limits.h>
-#include <readline/readline.h>
 #include <dirent.h>
 #include <sys/stat.h>
+#include <readline/readline.h>
 
 char** split_h(const char* str){
 	char** ret = MANY(char*, 8);
@@ -86,6 +86,11 @@ int vercmp(const char *a, const char *b){
 	return 0;
 }
 
+char* path_home_from_uid(uid_t uid){
+	struct passwd* pwd = getpwuid(uid);
+	return str_dup(pwd->pw_dir, 0);
+}
+
 char* path_home(char* path){
 	char *hd;
 	if( (hd = getenv("HOME")) == NULL ){
@@ -143,7 +148,11 @@ void mk_dir(const char* path, unsigned privilege){
 		l += len;
 		mkpath[l++] = '/';
 		mkpath[l] = 0;
-		if( !dir_exists(mkpath) ) mkdir(mkpath, privilege);
+		if( !dir_exists(mkpath) ){
+			if( mkdir(mkpath, privilege) ){
+				dbg_error("fail mkdir: %s", mkpath);
+			}
+		}
 	}
 }
 
@@ -240,8 +249,6 @@ int readline_yesno(void){
 	free(in);
 	return ret;
 }
-
-
 
 
 

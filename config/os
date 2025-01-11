@@ -3,5 +3,5 @@ use os.base
 use os.root
 use os.config
 use os.home
-sysdeny mknod mknodat
+syscall deny mknod mknodat
 chdir ./

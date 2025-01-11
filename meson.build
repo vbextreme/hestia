@@ -1,7 +1,7 @@
 ###########
 # project #
 ###########
-project('hestia', 'c', version: '0.1.5')
+project('hestia', 'c', version: '0.2.0')
 cc = meson.get_compiler('c')
 localPath = meson.current_source_dir()
 
@@ -10,7 +10,7 @@ type = 'executable'
 version = {
   'mmr': meson.project_version().split('.'),
   'str': meson.project_version(),
-  'dsc': 'missing some files'
+  'dsc': 'make config in bytecode, created virtual machine for execute bytecode'
 }
 
 if get_option('eveloper')

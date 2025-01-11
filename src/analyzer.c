@@ -3,6 +3,7 @@
 
 #include <hestia/inutility.h>
 #include <hestia/mount.h>
+#include <hestia/analyzer.h>
 
 #include <dirent.h>
 
@@ -19,6 +20,29 @@ __private const char* dtname(unsigned dt){
 	return DTNAME[dt];
 }
 
+__private void dump_search_mod(const char* path){
+	DIR* d = opendir(path);
+	struct dirent* ent;
+	unsigned count = 0;
+	if( !d ){
+		dbg_error("%s: %m", path);
+		return;
+	}
+	while( (ent=readdir(d)) ){
+		if( !strcmp(ent->d_name, ".") || !strcmp(ent->d_name, "..") ) continue;
+		++count;
+		__free char* fullname = str_printf("%s/%s", path, ent->d_name);
+		if( ent->d_type == DT_DIR ){
+			dump_search_mod(fullname);
+		}
+		else{
+			printf("[%s]%s\n",dtname(ent->d_type), fullname);
+		}
+	}
+	closedir(d);
+	if( !count ) printf("[dir]%s\n", path);
+}
+
 __private void dump_overlay(const char* path){
 	DIR* d = opendir(path);
 	struct dirent* ent;
@@ -28,32 +52,48 @@ __private void dump_overlay(const char* path){
 	}
 	while( (ent=readdir(d)) ){
 		if( !strcmp(ent->d_name, ".") || !strcmp(ent->d_name, "..") ) continue;
-		__free char* tmp = str_printf("%s/%s", path, ent->d_name);
-		printf("[%s]%s\n",dtname(ent->d_type), tmp);
-		if( ent->d_type == DT_DIR ) dump_overlay(tmp);
+		__free char* fullname = str_printf("%s/%s", path, ent->d_name);
+		if( ent->d_type == DT_DIR ){
+			dump_search_mod(fullname);
+		}
+		else{
+			printf("[%s]%s\n",dtname(ent->d_type), fullname);
+		}
 	}
 	closedir(d);
 }
 
-__private void analyze_dump(rootHierarchy_s* h, const char* pathParent, const char* destdir){
-	__free char* target = str_printf("%s/%s", pathParent, h->target);
-	
-	if( !strcmp(h->type, "overlay") ){
-		__free char* upperdir = str_printf("%s/%s.upper", destdir, h->target);
-		dump_overlay(upperdir);
+__private void find_overlay(const char* path){
+	DIR* d = opendir(path);
+	struct dirent* ent;
+	if( !d ){
+		dbg_error("%s: %m", path);
+		return;
 	}
-	
-	mforeach(h->child, i){
-		analyze_dump(&h->child[i], target, destdir);
+	while( (ent=readdir(d)) ){
+		if( !strcmp(ent->d_name, ".") || !strcmp(ent->d_name, "..") || !strcmp(ent->d_name, HESTIA_ROOT) ) continue;
+		if( ent->d_type != DT_DIR ) continue;
+		const char* name = strrchr(ent->d_name, '.');
+		if( !name ) continue;
+		if( !strcmp(name, ".upper") ){
+			__free char* overlay = str_printf("%s/%s", path, ent->d_name);
+			dump_overlay(overlay);
+		}
+		else if( !strcmp(name, ".work") || !strcmp(name, ".merge") ){
+			continue;
+		}
+		else{
+			__free char* childpath = str_printf("%s/%s", path, ent->d_name);
+			find_overlay(childpath);
+		}
 	}
+	closedir(d);
 }
 
-void hestia_analyze_root(const char* destdir, rootHierarchy_s* root){
-	__free char* path = str_printf("%s/root", destdir);
-	printf("@analyzer@%s\n", path);
-	mforeach(root->child, i){
-		if( root->child[i].target[0] == HESTIA_CMD_CHR ) continue;
-		analyze_dump(&root->child[i], path, destdir);
-	}
+void hestia_analyze_root(const char* destdir){
+	printf(HESTIA_ANALYZER"%s\n", destdir);
+	find_overlay(destdir);
 	puts("");
 }
+
+

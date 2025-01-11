@@ -1,4 +1,4 @@
-hestia v0.1.5
+hestia v0.2.0
 =============
 Introduction:
 =============
@@ -20,6 +20,7 @@ Manual Build
 
 State:
 ======
+* v0.2.0 make config in bytecode, created virtual machine for execute bytecode
 * v0.1.5 missing some files
 * v0.1.4 change umount from config to system, disable reuse old sandbox, add sysdeny config for disable systemcall
 * v0.1.3 reuse previuos mountpoint for execute new command

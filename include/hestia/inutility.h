@@ -1,10 +1,13 @@
 #ifndef __INUTILITY_H__
 #define __INUTILITY_H__
 
+#include <unistd.h>
+
 char** split_h(const char* str);
 
 char* load_file(const char* fname, int exists);
 int vercmp(const char *a, const char *b);
+char* path_home_from_uid(unsigned uid);
 char* path_home(char* path);
 char* path_explode(const char* path);
 int dir_exists(const char* path);
