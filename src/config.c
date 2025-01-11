@@ -11,6 +11,7 @@
 #include <hestia/inutility.h>
 #include <hestia/config.h>
 #include <hestia/system.h>
+#include <hestia/analyzer.h>
 
 __private char* config_load(const char* confname){
 	__free char* path = str_printf("%s/%s", HESTIA_CONFIG_PATH, confname);
@@ -135,6 +136,23 @@ __private int vm_exec(configvm_s* vm){
 	return 1;
 }
 
+// [s0] destdir [s1] name
+__private int vm_snapshot(configvm_s* vm){
+	__free char* dest = str_printf("%s/%s.snapshot", vm->current->arg[0].s, vm->current->arg[1].s);
+	__free analEnt_s* snap = hestia_analyze_list(vm->current->arg[0].s);
+	FILE* f = fopen(dest, "w");
+	if( !f ){
+		dbg_error("fail to open file: %s:: %m", dest);
+		return -1;
+	}
+	mforeach(snap, i){
+		fprintf(f, "[%s]%s\n", dtname(snap[i].type), snap[i].path);
+	}
+	fclose(f);
+	chmod(dest, 0755);
+	return 0;
+}
+
 __private cbc_s* cbc_new(void){
 	cbc_s* bc = NEW(cbc_s);
 	ld_ctor(bc);
@@ -147,6 +165,8 @@ __private configvm_s* vm_new(void){
 	vm->filter  = NULL;
 	vm->flags   = 0;
 	vm->stage   = NULL;
+	vm->atexit  = NULL;
+	vm->onfail  = NULL;
 	return vm;
 }
 
@@ -171,7 +191,6 @@ typedef struct configp{
 	char*       rootdir;
 	char*       homedir;
 	cbc_s*      mountpoint;
-	cbc_s*      scriptMount;
 	cbc_s*      scriptRoot;
 	cbc_s*      scriptAtExit;
 	cbc_s*      scriptOnFail;
@@ -390,8 +409,7 @@ __private void p_script(configp_s* conf, unsigned count, char* token[MAX_TOKEN])
 	__free char* script = token_script(token[2]);
 	bc->arg[0].s = str_printf("%s %s %u %u %s", script, conf->destdir, conf->guid, conf->ggid, conf->scrArg ? conf->scrArg : "");
 	if( !strcmp(token[1], "mount") ){
-		if( conf->scriptMount ) ld_before(conf->scriptMount, bc);
-		else conf->scriptMount = bc;
+		ld_before(conf->mountpoint, bc);
 	}
 	else if( !strcmp(token[1], "root") ){
 		if( conf->scriptRoot ) ld_before(conf->scriptRoot, bc);
@@ -436,6 +454,16 @@ __private void p_chdir(configp_s* conf, unsigned count, char* token[MAX_TOKEN]){
 	conf->chdir = bc;
 }
 
+__private void p_snapshot(configp_s* conf, unsigned count, char* token[MAX_TOKEN]){
+	token_required(2, count, token);
+	cbc_s* bc = cbc_new();
+	bc->fn = vm_snapshot;
+	bc->arg[0].s = mem_borrowed(conf->destdir);
+	bc->arg[1].s = mem_borrowed(token[1]);
+	//dbg_info("snapshot %s", bc->arg[1].s);
+	ld_before(conf->mountpoint, bc);
+}
+
 __private void parse_line(configp_s* conf, unsigned count, char* token[MAX_TOKEN]){
 	__private const char* CMDNAME[] = {
 		"use",
@@ -449,6 +477,7 @@ __private void parse_line(configp_s* conf, unsigned count, char* token[MAX_TOKEN
 		"script",
 		"syscall",
 		"chdir",
+		"snapshot",
 	};
 	__private parse_f CMDFN[] = {
 		p_use,
@@ -462,6 +491,7 @@ __private void parse_line(configp_s* conf, unsigned count, char* token[MAX_TOKEN
 		p_script,
 		p_syscall,
 		p_chdir,
+		p_snapshot
 	};
 	
 	for( unsigned i = 0; i < sizeof_vector(CMDNAME); ++i ){
@@ -525,10 +555,11 @@ __private void build_file(configp_s* conf, const char* lines){
 __private void build_link(configp_s* conf){
 	conf->vm->atexit = conf->scriptAtExit;
 	conf->vm->onfail = conf->scriptOnFail;
+	
 	cbc_s* changeroot = cbc_new();
 	changeroot->fn = vm_change_root;
 	changeroot->arg[0].s = mem_borrowed(conf->rootdir);
-
+	
 	cbc_s* dropprivilege = cbc_new();
 	dropprivilege->fn = vm_privilege_drop;
 	dropprivilege->arg[0].u = conf->guid;
@@ -545,7 +576,6 @@ __private void build_link(configp_s* conf){
 	mem_header(exec->arg[0].as)->len = nex;
 	
 	conf->vm->stage = conf->mountpoint;
-	if( conf->scriptMount ) ld_before(conf->vm->stage, conf->scriptMount);
 	ld_before(conf->vm->stage, changeroot);
 	if( conf->scriptRoot ) ld_before(conf->vm->stage, conf->scriptRoot);
 	if( conf->vm->filter ){
@@ -577,7 +607,6 @@ configvm_s* config_vm_build(const char* confname, char* destdir, uid_t uid, gid_
 		.chdir        = NULL,
 		.mountpoint   = NULL,
 		.scriptAtExit = NULL,
-		.scriptMount  = NULL,
 		.scriptOnFail = NULL,
 		.scriptRoot   = NULL,
 	};

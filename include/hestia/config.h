@@ -38,6 +38,9 @@
  * [s0] dir [u1] prv [u2] uid [u3] gid
  *
  *
+ * snapshot snapname
+ * [s0] destdir [s1] snapname
+ * output /destdir/snapname.snapshot only before change root
 */
 
 

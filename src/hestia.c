@@ -9,8 +9,20 @@
 #include <hestia/config.h>
 #include <hestia/analyzer.h>
 
-/* TODO
- * check if path contains / at end
+/*
+ *	sandbox need to exists outside sandbox itself
+ *
+ *	TODO
+ *		namespace:
+ *		 IPC     wip
+ *		 NETWORK need more documentation
+ *		 MOUNT   ✓
+ *		 PID     ✓
+ *		 TIME    wip
+ *		 USER    need more documentation
+ *		 UTS     need more documentation
+ *
+ *
 */
 
 option_s OPT[] = {

@@ -105,13 +105,14 @@ char* path_home(char* path){
 }
 
 char* path_explode(const char* path){
+	char* ret = NULL;
 	if( path[0] == '~' && path[1] == '/' ){
 		char home[PATH_MAX];
-		return str_printf("%s%s", path_home(home), &path[1]);
+		ret = str_printf("%s%s", path_home(home), &path[1]);
 	}
 	else if( path[0] == '.' && path[1] == '/' ){
 		char cwd[PATH_MAX];
-		return str_printf("%s%s", getcwd(cwd, PATH_MAX), &path[1]);
+		ret = str_printf("%s%s", getcwd(cwd, PATH_MAX), &path[1]);
 	}
 	else if( path[0] == '.' && path[1] == '.' && path[2] == '/' ){
 		char cwd[PATH_MAX];
@@ -119,13 +120,21 @@ char* path_explode(const char* path){
 		const char* bk = strrchr(cwd, '/');
 		iassert( bk );
 		if( bk > cwd ) --bk;
-		return str_printf("%s%s", bk, &path[2]);
+		ret = str_printf("%s%s", bk, &path[2]);
 	}
 	else if( path[0] == '/' ){
-		return str_dup(path, 0);
+		ret = str_dup(path, 0);
 	}
-	char cwd[PATH_MAX];
-	return str_printf("%s/%s", getcwd(cwd, PATH_MAX), path);
+	else{
+		char cwd[PATH_MAX];
+		ret = str_printf("%s/%s", getcwd(cwd, PATH_MAX), path);
+	}
+	if( !ret ) die("path explode internal error on path: %s", path);
+	
+	while( mem_header(ret)->len > 1 && ret[mem_header(ret)->len-1] == '/' ){
+		ret[--mem_header(ret)->len] = 0;
+	}
+	return ret;
 }
 
 int dir_exists(const char* path){

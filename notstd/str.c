@@ -7,6 +7,7 @@ char* str_dup(const char* src, size_t len){
 	char* str = MANY(char, len + 1);
 	if( len ) memcpy(str, src, len);
 	str[len] = 0;
+	mem_header(str)->len = len;
 	return str;
 }
 

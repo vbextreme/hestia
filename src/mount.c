@@ -38,7 +38,7 @@ __private void overlay_rmdir(const char* destdir){
 	while( (ent=readdir(d)) ){
 		char* name = strrchr(ent->d_name, '.');
 		if( !name ) continue;
-		if( !strcmp(name, ".upper") || !strcmp(name, ".work") ){
+		if( !strcmp(name, ".upper") || !strcmp(name, ".work") || !strcmp(name, ".merge") ){
 			__free char* path = str_printf("%s/%s", destdir, ent->d_name);
 			dbg_info("overlay.rm %s", path);
 			rm(path);

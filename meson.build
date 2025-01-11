@@ -1,7 +1,7 @@
 ###########
 # project #
 ###########
-project('hestia', 'c', version: '0.2.0')
+project('hestia', 'c', version: '0.2.2')
 cc = meson.get_compiler('c')
 localPath = meson.current_source_dir()
 
@@ -10,7 +10,7 @@ type = 'executable'
 version = {
   'mmr': meson.project_version().split('.'),
   'str': meson.project_version(),
-  'dsc': 'make config in bytecode, created virtual machine for execute bytecode'
+  'dsc': 'fix str_dup not set len, add snapshot, chomp path_explode'
 }
 
 if get_option('eveloper')
@@ -18,12 +18,13 @@ if get_option('eveloper')
     message('update README')
     run_command('sed', '-i', '-r', '-e', 's/^' + meson.project_name() + '[ \\t]*v(.*)/' + meson.project_name() + ' v' + version['str'] + '/', './README.md', check: true)
     run_command('sed', '-i', '-r', '-e', '0,/^\* v.*/{s/\*(.*)/\* v' + version['str'] + ' ' + version['dsc'] + '\\n\*\\1/}' , './README.md', check: true).stdout().strip()
+    message('update PKGBUILD')
+    run_command('sed', '-i', '-r', '-e', 's/^pkgver=\'([^\']+)\'/pkgver=\'' + version['str'] + '\'/', './distro/PKGBUILD', check: true)
     message('update git')
     run_command('git', 'commit', '-a', '-m', version['dsc'], check: true)
     run_command('git', 'tag', '-a', 'v' + version['str'], '-m', version['dsc'], check: true)
     run_command('git', 'push', '--follow-tags', check: true)
-    message('update PKGBUILD')
-    run_command('sed', '-i', '-r', '-e', 's/^pkgver=\'([^\']+)\'/pkgver=\'' + version['str'] + '\'/', './distro/PKGBUILD', check: true)
+    message('update AUR')
     run_command('cp', './distro/PKGBUILD', './distro/' + meson.project_name() + '/PKGBUILD', check: true)
     run_command('bash', '-c', 'makepkg -D ./distro --printsrcinfo > ./distro/' + meson.project_name() + '/.SRCINFO', check: true)
     run_command('git', '-C', './distro/' + meson.project_name(), 'commit', '-a', '-m', version['dsc'], check: true)
